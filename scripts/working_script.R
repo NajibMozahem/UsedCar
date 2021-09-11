@@ -148,6 +148,8 @@ ggplot(the_data) + geom_smooth(aes(mileage, price,
 ## steepest for VW and Toyota.
 
 ## Modeling
+
+the_data <- the_data[sample(nrow(the_data), 1000), ]
 test_index <- createDataPartition(the_data$price, p = 0.5, 
                                   list = FALSE)
 train_set <- the_data[-test_index, ]
@@ -166,7 +168,9 @@ rmse_lm <- RMSE(predict(model_lm, test_set),
 model_rf <- train(log(price) ~ ., data = train_set,
                   method = "rf", 
                   trControl = train_control,
-                  tuneGrid = expand.grid(mtry = c(1:10)))
+                  tuneGrid = expand.grid(mtry = c(1:50)))
+
+ggplot(model_rf, highlight = TRUE)
 
 rmse_rf <- RMSE(predict(model_rf, test_set), 
                 log(test_set$price))
@@ -183,16 +187,6 @@ model_svm <- train(log(price) ~ ., data = train_set,
 rmse_svm <- RMSE(predict(model_svm, test_set), 
      log(test_set$price))
 
-model_brnn <- train(log(price) ~ ., data = train_set,
-                    method = "brnn", trControl = train_control)
 
-rmse_brnn <- RMSE(predict(model_brnn, test_set),
-                  log(test_set$price))
-
-model_lasso <- train(log(price) ~ ., data = train_set,
-                     method = "lasso",
-                     trControl = train_control,
-                     tuneGrid = expand.grid(fraction = seq(0.5, 0.9, 0.1)))
-
-rmse_lasso <- RMSE(predict(model_lasso, test_set),
-                   log(test_set$price))
+rmse_results <- data.frame(Method = c("Linear", "Random forest", "SVM"),
+                           RMSE = c(rmse_lm, rmse_rf, rmse_svm))
