@@ -153,16 +153,15 @@ test_index <- createDataPartition(the_data$price, p = 0.5,
 train_set <- the_data[-test_index, ]
 test_set <- the_data[test_index, ]
 
-
-model_lm <- train(log(price) ~ ., data = train_set, 
-                  method = "lm")
-
-rmse_lm <- RMSE(predict(model_lm, test_set), 
-                log(test_set$price))
-
 train_control <- trainControl(method = "repeatedcv", 
                               number = 10,
                               repeats = 5)
+
+model_lm <- train(log(price) ~ ., data = train_set, 
+                  method = "lm", trControl = train_control)
+
+rmse_lm <- RMSE(predict(model_lm, test_set), 
+                log(test_set$price))
 
 model_rf <- train(log(price) ~ ., data = train_set,
                   method = "rf", 
@@ -185,13 +184,14 @@ rmse_svm <- RMSE(predict(model_svm, test_set),
      log(test_set$price))
 
 model_brnn <- train(log(price) ~ ., data = train_set,
-                    method = "brnn")
+                    method = "brnn", trControl = train_control)
 
 rmse_brnn <- RMSE(predict(model_brnn, test_set),
                   log(test_set$price))
 
 model_lasso <- train(log(price) ~ ., data = train_set,
                      method = "lasso",
+                     trControl = train_control,
                      tuneGrid = expand.grid(fraction = seq(0.5, 0.9, 0.1)))
 
 rmse_lasso <- RMSE(predict(model_lasso, test_set),
