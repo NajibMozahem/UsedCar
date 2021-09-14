@@ -1,4 +1,4 @@
-packages <- c("tidyverse", "caret", "brnn", "LiblineaR", "elasticnet")
+packages <- c("tidyverse", "caret", "LiblineaR")
 
 lapply(packages, function(x) {
   if (!require(x, character.only = TRUE)) {
@@ -21,7 +21,7 @@ get <- sapply(file_names, function(x){
 })
 
 ## combine
-do.call(rbind, get2)
+do.call(rbind, get)
 ## we get an error message telling us that there are different
 ## number of columns in different data frames. If we look at the
 ## data frames we see that most have 10 columns while a few
@@ -149,7 +149,7 @@ ggplot(the_data) + geom_smooth(aes(mileage, price,
 
 ## Modeling
 
-the_data <- the_data[sample(nrow(the_data), 1000), ]
+the_data <- the_data[sample(nrow(the_data), 5000), ]
 test_index <- createDataPartition(the_data$price, p = 0.5, 
                                   list = FALSE)
 train_set <- the_data[-test_index, ]
@@ -190,3 +190,43 @@ rmse_svm <- RMSE(predict(model_svm, test_set),
 
 rmse_results <- data.frame(Method = c("Linear", "Random forest", "SVM"),
                            RMSE = c(rmse_lm, rmse_rf, rmse_svm))
+
+## create ensemble
+ensemble <- data.frame(Linear = predict(model_lm, test_set),
+                       Random_forest = predict(model_rf, test_set),
+                       SVM = predict(model_svm, test_set))
+ensemble_predict <- rowMeans(ensemble)
+rmse_ensemble <- RMSE(ensemble_predict, log(test_set$price))
+rmse_results <- rmse_results %>% add_row(Method = "Ensemble",
+                                         RMSE = rmse_ensemble)
+
+## the linear model is the best
+## let us look at the accuracy of the predictions
+predict_lm <- predict(model_lm, test_set)
+check <- cbind(test_set, predict_lm)
+## plot the predictions against the actual values and 
+## compare using the y=x line
+ggplot(check) + geom_point(aes(predict_lm, log(price)), alpha = 0.1) + 
+  geom_line(aes(log(price), log(price))) + facet_wrap(~car_type)
+## now plot the error distribution. 
+ggplot(check) + 
+  geom_histogram(aes(log(price) - predict_lm), fill = "blue")
+## looks symmetric
+
+## now plot errors against some variables
+ggplot(check, aes(year, log(price) - predict_lm)) + geom_point() + 
+  geom_smooth() + ylab("Errors")
+
+ggplot(check, aes(car_type, log(price) - predict_lm)) + 
+  geom_point() + ylab("Errors")
+
+ggplot(check, aes(price, log(price) - predict_lm)) + geom_point() +
+  geom_smooth() + ylab("Errors")
+
+ggplot(check, aes(mileage, log(price) - predict_lm)) + geom_point() +
+  geom_smooth() + ylab("Errors")
+
+ggplot(check, aes(car_type, log(price) - predict_lm)) + 
+  ylab("Errors") + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 90,
+                                                    vjust = 0.5))
