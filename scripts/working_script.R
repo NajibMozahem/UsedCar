@@ -149,7 +149,11 @@ ggplot(the_data) + geom_smooth(aes(mileage, price,
 
 ## Modeling
 
+## too many observations, so will take a sample of 5000
+## to make computing time more management
 the_data <- the_data[sample(nrow(the_data), 5000), ]
+
+## now create train and test sets
 test_index <- createDataPartition(the_data$price, p = 0.5, 
                                   list = FALSE)
 train_set <- the_data[-test_index, ]
@@ -191,42 +195,39 @@ rmse_svm <- RMSE(predict(model_svm, test_set),
 rmse_results <- data.frame(Method = c("Linear", "Random forest", "SVM"),
                            RMSE = c(rmse_lm, rmse_rf, rmse_svm))
 
-## create ensemble
+## create ensemble without including SVM
 ensemble <- data.frame(Linear = predict(model_lm, test_set),
-                       Random_forest = predict(model_rf, test_set),
-                       SVM = predict(model_svm, test_set))
+                       Random_forest = predict(model_rf, test_set))
 ensemble_predict <- rowMeans(ensemble)
 rmse_ensemble <- RMSE(ensemble_predict, log(test_set$price))
 rmse_results <- rmse_results %>% add_row(Method = "Ensemble",
                                          RMSE = rmse_ensemble)
 
-## the linear model is the best
+## the ensemble model is the best
 ## let us look at the accuracy of the predictions
-predict_lm <- predict(model_lm, test_set)
-check <- cbind(test_set, predict_lm)
+check <- cbind(test_set, ensemble_predict)
 ## plot the predictions against the actual values and 
 ## compare using the y=x line
-ggplot(check) + geom_point(aes(predict_lm, log(price)), alpha = 0.1) + 
-  geom_line(aes(log(price), log(price))) + facet_wrap(~car_type)
+ggplot(check) + geom_point(aes(ensemble_predict, log(price)), alpha = 0.1) + 
+  geom_line(aes(log(price), log(price))) + xlab("Predicted") + 
+  ylab("Actual") + facet_wrap(~car_type)
+
 ## now plot the error distribution. 
 ggplot(check) + 
-  geom_histogram(aes(log(price) - predict_lm), fill = "blue")
+  geom_histogram(aes(log(price) - ensemble_predict), fill = "blue")
 ## looks symmetric
 
 ## now plot errors against some variables
-ggplot(check, aes(year, log(price) - predict_lm)) + geom_point() + 
+ggplot(check, aes(year, log(price) - ensemble_predict)) + geom_point() + 
   geom_smooth() + ylab("Errors")
 
-ggplot(check, aes(car_type, log(price) - predict_lm)) + 
-  geom_point() + ylab("Errors")
-
-ggplot(check, aes(price, log(price) - predict_lm)) + geom_point() +
+ggplot(check, aes(price, log(price) - ensemble_predict)) + geom_point() +
   geom_smooth() + ylab("Errors")
 
-ggplot(check, aes(mileage, log(price) - predict_lm)) + geom_point() +
+ggplot(check, aes(mileage, log(price) - ensemble_predict)) + geom_point() +
   geom_smooth() + ylab("Errors")
 
-ggplot(check, aes(car_type, log(price) - predict_lm)) + 
+ggplot(check, aes(car_type, log(price) - ensemble_predict)) + 
   ylab("Errors") + 
   geom_boxplot() + theme(axis.text.x = element_text(angle = 90,
                                                     vjust = 0.5))
