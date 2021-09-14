@@ -208,9 +208,11 @@ rmse_results <- rmse_results %>% add_row(Method = "Ensemble",
 check <- cbind(test_set, ensemble_predict)
 ## plot the predictions against the actual values and 
 ## compare using the y=x line
+cor <- round(cor(check$ensemble_predict, log(check$price)^2), 2)
 ggplot(check) + geom_point(aes(ensemble_predict, log(price)), alpha = 0.1) + 
   geom_line(aes(log(price), log(price))) + xlab("Predicted") + 
-  ylab("Actual") + facet_wrap(~car_type)
+  ylab("Actual") + labs(caption = paste("R-squared: ", cor)) + 
+  facet_wrap(~car_type)
 
 ## now plot the error distribution. 
 ggplot(check) + 
